@@ -185,10 +185,15 @@ if !update! equ 1 (
                     if !errorlevel! equ 0 (
                         echo Hash of file !sPath!!sFile! is valid
                         echo Hash: !sHash!
+                        echo Hash of file !sPath!!sFile! is valid>> !output!
+                        echo Hash: !sHash!>> !output!
                     ) else (
                         echo Hash of file !sPath!!sFile! is invalid
                         echo Hash: !sHash!
                         echo Exiting
+                        echo Hash of file !sPath!!sFile! is invalid>> !output!
+                        echo Hash: !sHash!>> !output!
+                        echo Exiting>> !output!
                         exit /b 1
                     )
                 )
@@ -199,7 +204,5 @@ if !update! equ 1 (
     echo Finished Update
     echo Finished Update>> !output!
 )
-
-
 
 endlocal
