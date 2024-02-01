@@ -1,0 +1,76 @@
+engine-container
+{
+  display: none;
+}
+
+body
+{
+  margin: 0;
+}
+
+menu-container
+{
+  padding-top: 1px;
+  padding-bottom: 1px;
+  padding-right: 1px;
+  position: relative;
+  top: 0;
+  left: 0;
+  user-select: none;
+  display: flex;
+  flex-direction: row;
+  background-color: #D0D0D0;
+}
+
+menu-element
+{
+  margin-top: 1px;
+  display: inline-block;
+  position: relative;
+  margin-right: 1px;
+}
+
+menu-head
+{
+  padding-top: 1px;
+  padding-bottom: 1px;
+  padding-right: 1px;
+  border: 1px solid #808080;
+  box-shadow: 0 8px 16px 0 rgba(0, 0, 0, 0.2);
+  transition: background-color 0.3s ease;
+  cursor: pointer;
+}
+
+menu-head:hover
+{
+  background-color: #808080;
+}
+
+menu-body
+{
+  display: none;
+  position: absolute;
+  background-color: #F0F0F0;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  width: fit-content;
+  min-width: 100%;
+}
+
+menu-child
+{
+  padding: 1px;
+  display: block;
+  color: #333;
+  transition: background-color 0.3s;
+}
+
+menu-child:hover
+{
+  background-color: #808080;
+  color: #000000;
+}
+
+menu-element:hover menu-body
+{
+  display: block;
+}

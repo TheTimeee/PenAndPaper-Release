@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <title>Pen & Paper</title>
+
+  <meta charset="utf-8" />
+
+  <meta name="author" content="Pen and Paper authors (see Credits.txt)" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Pen and Paper Client Web based" />
+
+  <!-- APIs -->
+  <script src="./Engine.js"></script>
+  <link rel="stylesheet" href="./Engine.css">
+</head>
+
+<body onload="main()">
+  <engine-container>
+    <menu-container style="margin-bottom: 10px;">
+      <menu-element>
+        <menu-head>Character</menu-head>
+        <menu-body>
+          <menu-child>New</menu-child>
+          <menu-child>Load</menu-child>
+          <menu-child>Save</menu-child>
+          <menu-child>Save as</menu-child>
+        </menu-body>
+      </menu-element>
+
+      <menu-element>
+        <menu-head id="IDC_MENU_SELECT_LANGUAGE"></menu-head>
+        <menu-body id="IDC_MENU_SELECT_LANGUAGE_LIST"></menu-body>
+      </menu-element>
+    </menu-container>
+
+    <button id="IDC_BUTTON_DICE_WINDOW" onclick="OpenDice()"></button>
+  </engine-container>
+
+  <script>
+    var oDiceWindow = null;
+    var LANGUAGES = null;
+
+    async function main()
+    {
+      if (await Engine.Initialize())
+      {
+        Engine.Localize();
+        
+        await PopulateLanguageList(); 
+      }
+    }
+
+    async function PopulateLanguageList()
+    {
+      let sLanguages = await Engine.ReadFile("./localization/");
+      if (sLanguages === null) return;
+
+      let aLanguages = JSON.parse(sLanguages);
+
+      LANGUAGES = new Array();
+
+      let oIniParser = new IniParser();
+      for (let i = 0; i < aLanguages.length; i++)
+      {
+        let sFile = await Engine.ReadFile("./localization/" + aLanguages[i]);
+        oIniParser.ReadFromBytes(sFile);
+
+        if (!oIniParser.JumpToHeader("Settings")) continue;
+        if (!oIniParser.GetNextLine()) continue;
+        if (oIniParser.GetKeyValue() !== "sLanguage") continue;
+
+        LANGUAGES.push(aLanguages[i]);
+        
+        let oElement = document.createElement("menu-child");
+        oElement.textContent = oIniParser.GetValueString(0);
+        oElement.id = "IDC_MENU_SELECT_LANGUAGE_" + oIniParser.GetValueString(0).toUpperCase();
+        oElement.addEventListener("click", function()
+        {
+          ApplyLanguage(i);
+        });
+
+        document.getElementById("IDC_MENU_SELECT_LANGUAGE_LIST").appendChild(oElement);
+      }
+    }
+
+    function OpenDice()
+    {
+      if (TypeCheck.Null(oDiceWindow) || oDiceWindow.closed)
+      {
+        let url = "http://localhost:8080/dice.html";
+        let features = "width=1,height=1,toolbar=no,location=no,status=no,menubar=no";
+        oDiceWindow = window.open(url, '_blank', features);
+      }
+      else
+      {
+        oDiceWindow.focus();
+      }
+    }
+
+    function ApplyLanguage(iLanguage)
+    {
+      if (TypeCheck.Int(iLanguage) == false) return;
+      if (LANGUAGES[iLanguage] == null) return;
+
+      localStorage.setItem("engine_language", LANGUAGES[iLanguage]);
+
+      Engine.Localize();
+
+      if (!TypeCheck.Null(oDiceWindow) && !oDiceWindow.closed) oDiceWindow.Localize();
+    }
+
+    window.addEventListener('beforeunload', function()
+    {
+      if (!TypeCheck.Null(oDiceWindow) && !oDiceWindow.closed)
+      {
+        oDiceWindow.close();
+      }
+    });
+  </script>
+</body>
+
+</html>

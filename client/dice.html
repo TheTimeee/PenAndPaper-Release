@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <title>Pen & Paper Dice</title>
+
+  <meta charset="utf-8" />
+
+  <meta name="author" content="Pen and Paper authors (see Credits.txt)" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Pen and Paper Client Web based" />
+
+  <!-- APIs -->
+  <script src="./Engine.js"></script>
+  <link rel="stylesheet" href="./Engine.css">
+
+  <!-- Dice Source -->
+  <script src="./script/dice.js"></script>
+  <script src="./script/shared/DiceBot.js"></script>
+  <link rel="stylesheet" href="./style/dice.css">
+</head>
+
+<body onload="main()">
+  <engine-container>
+    <div id="IDC_CONTAINER_BOUNDINGBOX" class="bounding-box">
+      <textarea id="IDC_TEXTAREA_CONSOLE" class="console" readonly></textarea>
+      <div id="IDC_DIV_TABLE-CONTAINER" class="table-container">
+        <table>
+          <tbody>
+            <tr>
+              <td id="IDC_TEXT_GM_IP"></td>
+              <td><input class="textbox" type="text" id="IDC_TEXTBOX_TARGET" placeholder="localhost" value="localhost" maxlength="256"></td>
+              <td><button id="IDC_BUTTON_CONNECT" style="width: 100%; height: 100%;" onclick="Dice.Connect()"></button></td>
+              <td><div id="IDC_TEXT_CONNECT" style="color: red;"></div></td>
+            </tr>
+            <tr>
+              <td id="IDC_TEXT_NAME"></td>
+              <td colspan="3"><input class="textbox" type="text" id="IDC_TEXTBOX_NAME" value="Player" maxlength="256"></td>
+            </tr>
+            <tr>
+              <td id="IDC_TEXT_INTENTION"></td>
+              <td colspan="3"><input class="textbox" type="text" id="IDC_TEXTBOX_INTENTION" value="Intention" maxlength="256"></td>
+            </tr>
+            <tr>
+              <td id="IDC_TEXT_AMOUNT"></td>
+              <td colspan="3"><input class="textbox" type="number" id="IDC_TEXTBOX_AMOUNT" min="0" value="0" maxlength="256"></td>
+            </tr>
+            <tr>
+              <td id="IDC_TEXT_SIGNET"></td>
+              <td colspan="3"><input class="textbox" type="number" id="IDC_TEXTBOX_SIGNET" min="0" max="8" value="0" maxlength="256"></td>
+            </tr>
+            <tr>
+              <td id="IDC_TEXT_ROLLS"></td>
+              <td colspan="3"><input class="textbox" type="number" id="IDC_TEXTBOX_ROLLS" min="1" max="50" value="1" maxlength="256"></td>
+            </tr>
+            <tr>
+              <td id="IDC_TEXT_EWHAJA"></td>
+              <td colspan="3"><input type="checkbox" style="width: 100%; height: 100%;" id="IDC_CHECKBOX_EWHAJA"></td>
+            </tr>
+            <tr>
+              <td colspan="4"><button id="IDC_BUTTON_ROLL" style="width: 100%; height: 100%;" onclick="Dice.Roll()"></button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </engine-container>
+
+  <script>
+    var CONSOLE = null;
+    var LOCALIZED_MAP = null;
+
+    async function Localize()
+    {
+      LOCALIZED_MAP = await Engine.Localize();
+    }
+
+    async function main()
+    {
+      if (await Engine.Initialize())
+      {
+        CONSOLE = document.getElementById("IDC_TEXTAREA_CONSOLE");
+
+        Dice.ReadConfig();
+
+        await Localize();
+
+        CONSOLE.value += LOCALIZED_MAP.get("IDD_CONSOLE_INIT");
+      }
+    }
+
+    window.addEventListener('resize', function(oEvent)
+    {
+      if (TypeCheck.Null(CONSOLE)) return;
+
+      CONSOLE.scrollTop = CONSOLE.scrollHeight;
+    });
+
+    window.addEventListener('keydown', function(oEvent)
+    {
+      if (oEvent.key !== "Enter") return;
+
+      switch(document.activeElement)
+      {
+        case document.getElementById("IDC_TEXTBOX_TARGET"):
+        {
+          Dice.Connect();
+          break;
+        }
+        case document.getElementById("IDC_TEXTBOX_NAME"):
+        case document.getElementById("IDC_TEXTBOX_INTENTION"):
+        case document.getElementById("IDC_TEXTBOX_AMOUNT"):
+        case document.getElementById("IDC_TEXTBOX_SIGNET"):
+        case document.getElementById("IDC_TEXTBOX_ROLLS"):
+        case document.getElementById("IDC_CHECKBOX_EWHAJA"):
+        {
+          Dice.Roll();
+          break;
+        }
+        default:
+        {
+          break;
+        }
+      }
+    });
+
+    window.addEventListener('beforeunload', function(oEvent)
+    {
+      Dice.WriteConfig();
+    });
+  </script>
+</body>
+
+</html>
