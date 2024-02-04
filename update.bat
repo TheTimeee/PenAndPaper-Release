@@ -168,10 +168,21 @@ if !update! equ 1 (
                     )
 
                     REM Check if file requires an update
-                    certutil -hashfile "!sPath!!sFile!" SHA512 | findstr /i /x /c:"!sHash!" > nul
-                    if !errorlevel! neq 0 (
-                        set errorlevel=0
+                    set identical=0
+                    if exist "!sPath!!sFile!" (
+                        certutil -hashfile "!sPath!!sFile!" SHA512 | findstr /i /x /c:"!sHash!" > nul
+                        if !errorlevel! equ 0 (
+                            set identical=1
 
+                            echo File !qualified!!sPath!!sFile: =%%20! is up to date
+                            echo File !qualified!!sPath!!sFile: =%%20! is up to date>> !output!
+                        ) else (
+                            set errorlevel=0
+                        )
+                    )
+
+                    REM Update file if its not up to date
+                    if !identical! neq 1 (
                         REM Downloading File
                         curl --silent --retry !retries! --output "!sPath!!sFile!" "!qualified!!sPath!!sFile: =%%20!"
 
@@ -201,9 +212,6 @@ if !update! equ 1 (
                             echo Exiting>> !output!
                             exit /b 1
                         )
-                    ) else (
-                        echo File !qualified!!sPath!!sFile: =%%20! is up to date
-                        echo File !qualified!!sPath!!sFile: =%%20! is up to date>> !output!
                     )
                 )
             )
