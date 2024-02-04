@@ -123,7 +123,7 @@ if !update! equ 1 (
     echo Starting update
     echo Starting update>> !output!
 
-    REM Downloading Files
+    REM Delimiting Files
     for /f "tokens=*" %%a in ('type %manifest% ^| findstr /r "^[^;].*="') do (
         set "line=%%a"
         for /f "tokens=1,* delims== " %%b in ("!line!") do (
@@ -166,35 +166,44 @@ if !update! equ 1 (
                     if !subStr! equ !spaceChar! (
                         set "iEol=!iEol:~1!"
                     )
-                    
-                    REM Downloading File
-                    curl --silent --retry !retries! --output "!sPath!!sFile!" "!qualified!!sPath!!sFile: =%%20!"
 
-                    REM Check for errors
-                    if %errorlevel% equ 0 (
-                        echo Downloaded !qualified!!sPath!!sFile: =%%20! successfully
-                        echo Downloaded !qualified!!sPath!!sFile: =%%20! successfully>> !output!
-                    ) else (
-                        echo Failed to download !qualified!!sPath!!sFile: =%%20!, exiting
-                        echo Failed to download !qualified!!sPath!!sFile: =%%20!, exiting>> !output!
-                        exit /b 1
-                    )
-
-                    REM check for file integrity based on manifest
+                    REM Check if file requires an update
                     certutil -hashfile "!sPath!!sFile!" SHA512 | findstr /i /x /c:"!sHash!" > nul
-                    if !errorlevel! equ 0 (
-                        echo Hash of file !sPath!!sFile! is valid
-                        echo Hash: !sHash!
-                        echo Hash of file !sPath!!sFile! is valid>> !output!
-                        echo Hash: !sHash!>> !output!
+                    if !errorlevel! neq 0 (
+                        set errorlevel=0
+
+                        REM Downloading File
+                        curl --silent --retry !retries! --output "!sPath!!sFile!" "!qualified!!sPath!!sFile: =%%20!"
+
+                        REM Check for errors
+                        if %errorlevel% equ 0 (
+                            echo Downloaded !qualified!!sPath!!sFile: =%%20! successfully
+                            echo Downloaded !qualified!!sPath!!sFile: =%%20! successfully>> !output!
+                        ) else (
+                            echo Failed to download !qualified!!sPath!!sFile: =%%20!, exiting
+                            echo Failed to download !qualified!!sPath!!sFile: =%%20!, exiting>> !output!
+                            exit /b 1
+                        )
+
+                        REM check for file integrity based on manifest
+                        certutil -hashfile "!sPath!!sFile!" SHA512 | findstr /i /x /c:"!sHash!" > nul
+                        if !errorlevel! equ 0 (
+                            echo Hash of file !sPath!!sFile! is valid
+                            echo Hash: !sHash!
+                            echo Hash of file !sPath!!sFile! is valid>> !output!
+                            echo Hash: !sHash!>> !output!
+                        ) else (
+                            echo Hash of file !sPath!!sFile! is invalid
+                            echo Hash: !sHash!
+                            echo Exiting
+                            echo Hash of file !sPath!!sFile! is invalid>> !output!
+                            echo Hash: !sHash!>> !output!
+                            echo Exiting>> !output!
+                            exit /b 1
+                        )
                     ) else (
-                        echo Hash of file !sPath!!sFile! is invalid
-                        echo Hash: !sHash!
-                        echo Exiting
-                        echo Hash of file !sPath!!sFile! is invalid>> !output!
-                        echo Hash: !sHash!>> !output!
-                        echo Exiting>> !output!
-                        exit /b 1
+                        echo File !qualified!!sPath!!sFile: =%%20! is up to date
+                        echo File !qualified!!sPath!!sFile: =%%20! is up to date>> !output!
                     )
                 )
             )
