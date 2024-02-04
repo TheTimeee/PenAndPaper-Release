@@ -107,6 +107,7 @@ for /f "tokens=*" %%a in ('type %manifest% ^| findstr /r "^[^;].*="') do (
                 ) else (
                     echo Failed to download !qualified!!sPath!!sFile: =%%20!, exiting
                     echo Failed to download !qualified!!sPath!!sFile: =%%20!, exiting>> !output!
+                    pause
                     exit /b 1
                 )
 
@@ -124,6 +125,7 @@ for /f "tokens=*" %%a in ('type %manifest% ^| findstr /r "^[^;].*="') do (
                     echo Hash of file !sPath!!sFile! is invalid>> !output!
                     echo Hash: !sHash!>> !output!
                     echo Exiting>> !output!
+                    pause
                     exit /b 1
                 )
             )
@@ -133,5 +135,7 @@ for /f "tokens=*" %%a in ('type %manifest% ^| findstr /r "^[^;].*="') do (
 
 echo Finished Update
 echo Finished Update>> !output!
+
+pause
 
 endlocal
