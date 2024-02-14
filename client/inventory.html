@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <title>Pen & Paper</title>
+
+  <meta charset="utf-8" />
+
+  <meta name="author" content="Pen and Paper authors (see Credits.txt)" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Pen and Paper Client Web based" />
+
+  <!-- APIs -->
+  <script src="./Engine.js"></script>
+  <link rel="stylesheet" href="./Engine.css">
+</head>
+
+<body onload="main()">
+  <engine-container>
+    Inventory
+  </engine-container>
+
+  <script>
+    let PARENT = null;
+    let WINDOW_TYPE = cWindowType.Null;
+    var LOCALIZED_MAP = null;
+
+    async function Localize()
+    {
+      LOCALIZED_MAP = await Engine.Localize();
+    }
+
+    async function main()
+    {
+      if(window.opener !== null)
+      {
+        PARENT = window.opener;
+        WINDOW_TYPE = cWindowType.Popup;
+      }
+      else if (window.parent !== null && window !== window.parent)
+      {
+        PARENT = window.parent;
+        WINDOW_TYPE = cWindowType.IFrame;
+      }
+      else
+      {
+        document.write("This File can't be loaded independently without parent.");
+        return 0;
+      }
+      
+      if (WINDOW_TYPE === cWindowType.Popup)
+      {
+        if (performance.getEntriesByType("navigation")[0].type === "reload")
+        {
+          window.close();
+        }
+      }
+      
+      if (await Engine.Initialize())
+      {
+        await Localize();
+      }
+    }
+
+    window.addEventListener('beforeunload', function()
+    {
+      if (WINDOW_TYPE === cWindowType.Popup)
+      {
+        PARENT.postMessage(cWindowAttributes.Inventory, '*');
+      }
+    });
+  </script>
+</body>
+
+</html>

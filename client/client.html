@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <title>Pen & Paper</title>
+
+  <meta charset="utf-8" />
+
+  <meta name="author" content="Pen and Paper authors (see Credits.txt)" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Pen and Paper Client Web based" />
+
+  <!-- APIs -->
+  <script src="./Engine.js"></script>
+  <link rel="stylesheet" href="./Engine.css">
+</head>
+
+<body onload="main()">
+  <engine-container>
+    <menu-container>
+      <menu-element>
+        <menu-head id="IDC_MENU_CHARACTER"></menu-head>
+        <menu-body>
+          <menu-child id="IDC_MENU_CHARACTER_NEW"></menu-child>
+          <menu-child id="IDC_MENU_CHARACTER_LOAD"></menu-child>
+          <menu-child id="IDC_MENU_CHARACTER_SAVE"></menu-child>
+          <menu-child id="IDC_MENU_CHARACTER_SAVE_AS"></menu-child>
+        </menu-body>
+      </menu-element>
+
+      <menu-element>
+        <menu-head id="IDC_MENU_SELECT_LANGUAGE"></menu-head>
+        <menu-body id="IDC_MENU_SELECT_LANGUAGE_LIST"></menu-body>
+      </menu-element>
+
+      <menu-element>
+        <menu-head id="IDC_MENU_POPUP_WINDOW"></menu-head>
+        <menu-body>
+          <menu-child id="IDC_MENU_POPUP_WINDOW_BASE" onclick="Popup(cWindowAttributes.Base, true)"></menu-child>
+          <menu-child id="IDC_MENU_POPUP_WINDOW_INVENTORY" onclick="Popup(cWindowAttributes.Inventory, true)"></menu-child>
+          <menu-child id="IDC_MENU_POPUP_WINDOW_SKILLS" onclick="Popup(cWindowAttributes.Skills, true)"></menu-child>
+          <menu-child id="IDC_MENU_POPUP_WINDOW_SPELLS" onclick="Popup(cWindowAttributes.Spells, true)"></menu-child>
+          <menu-child id="IDC_MENU_POPUP_WINDOW_DICE" onclick="Popup(cWindowAttributes.Dice, true)"></menu-child>
+        </menu-body>
+      </menu-element>
+    </menu-container>
+
+    <table class="table-global">
+      <tr>
+        <td id="IDC_TABLE_ROW_BASE" class="table-global-row"></td>
+        <td id="IDC_TABLE_ROW_INVENTORY" class="table-global-row"></td>
+        <td id="IDC_TABLE_ROW_SKILLS" class="table-global-row"></td>
+        <td id="IDC_TABLE_ROW_SPELLS" class="table-global-row"></td>
+        <td id="IDC_TABLE_ROW_DICE" class="table-global-row"></td>
+      </tr>
+    </table>
+  </engine-container>
+
+  <script>
+    var POPUP_WINDOWS = new Map();
+    var LANGUAGES = null;
+    var UNLOADING = false;
+
+    async function main()
+    {
+      if (await Engine.Initialize())
+      {
+        Engine.Localize();
+
+        await PopulateLanguageList();
+
+        InitWindows();
+      }
+    }
+
+    function InitWindows()
+    {
+      aFields =
+      [
+        cWindowAttributes.Base,
+        cWindowAttributes.Inventory,
+        cWindowAttributes.Skills,
+        cWindowAttributes.Spells,
+        cWindowAttributes.Dice
+      ];
+
+      for (let [key, value] of aFields.entries())
+      {
+        let bDefault = true;
+
+        if (localStorage.getItem(value.get("popup")) == true)
+        {
+          bDefault = !Popup(value, false);
+        }
+
+        if (bDefault)
+        {
+          Popin(value, false);
+        }
+      }
+    }
+
+    async function PopulateLanguageList()
+    {
+      let sLanguages = await Engine.ReadFile("./localization/");
+      if (sLanguages === null) return;
+
+      let aLanguages = JSON.parse(sLanguages);
+
+      LANGUAGES = new Array();
+
+      let oIniParser = new IniParser();
+      for (let i = 0; i < aLanguages.length; i++) {
+        let sFile = await Engine.ReadFile("./localization/" + aLanguages[i]);
+        oIniParser.ReadFromBytes(sFile);
+
+        if (!oIniParser.JumpToHeader("Settings")) continue;
+        if (!oIniParser.GetNextLine()) continue;
+        if (oIniParser.GetKeyValue() !== "sLanguage") continue;
+
+        LANGUAGES.push(aLanguages[i]);
+
+        let oElement = document.createElement("menu-child");
+        oElement.textContent = oIniParser.GetValueString(0);
+        oElement.id = "IDC_MENU_SELECT_LANGUAGE_" + oIniParser.GetValueString(0).toUpperCase();
+        oElement.addEventListener("click", function () {
+          ApplyLanguage(i);
+        });
+
+        document.getElementById("IDC_MENU_SELECT_LANGUAGE_LIST").appendChild(oElement);
+      }
+    }
+
+    function ApplyLanguage(iLanguage)
+    {
+      if (TypeCheck.Int(iLanguage) == false) return;
+      if (LANGUAGES[iLanguage] == null) return;
+
+      localStorage.setItem("engine_language", LANGUAGES[iLanguage]);
+
+      Engine.Localize();
+
+      aFields =
+      [
+        cWindowAttributes.Base,
+        cWindowAttributes.Inventory,
+        cWindowAttributes.Skills,
+        cWindowAttributes.Spells,
+        cWindowAttributes.Dice
+      ];
+
+      //Localize iframes
+      for (let [key, value] of aFields.entries())
+      {
+
+        let oFrame = document.getElementById(value.get("frame"));
+        if (oFrame)
+        {
+          oFrame.contentWindow.Localize();
+        }
+      }
+
+      //Localize Popups
+      for (let [key, value] of POPUP_WINDOWS.entries())
+      {
+        if (!TypeCheck.Null(value) && !value.closed)
+        {
+          value.Localize();
+        }
+      }
+    }
+
+    function Popup(oWindowAttributes, bSaveState)
+    {
+      if (TypeCheck.Instance(oWindowAttributes) == false) return;
+      if (TypeCheck.Bool(bSaveState) == false) return;
+
+      let oFrame = document.getElementById(oWindowAttributes.get("frame"));
+      if (oFrame)
+      {
+        document.getElementById(oWindowAttributes.get("row")).removeChild(oFrame);
+      }
+
+      let oRow = document.getElementById(oWindowAttributes.get("row"));
+      if (oRow)
+      {
+        oRow.setAttribute("hidden", true);
+      }
+
+      let oWindow = POPUP_WINDOWS.get(oWindowAttributes.get("window"));
+      if (TypeCheck.Null(oWindow) || oWindow.closed)
+      {
+        let sAttributes = "width=" + oWindowAttributes.get("width") + ", " + "height=" + oWindowAttributes.get("height") + ", " + "toolbar=no, location=no, directories=no, status=no, menubar=no, scrollbars=no, copyhistory=no";
+        oWindow = window.open(oWindowAttributes.get("source"), oWindowAttributes.get("window"), sAttributes);
+        POPUP_WINDOWS.set(oWindowAttributes.get("window"), oWindow);
+        if (!oWindow) return false;
+
+        if (bSaveState)
+        {
+          localStorage.setItem(oWindowAttributes.get("popup"), 1);
+        }
+      }
+      else
+      {
+        oWindow.focus();
+      }
+
+      return true;
+    }
+
+    function Popin(oWindowAttributes, bSaveState)
+    {
+      if (TypeCheck.Instance(oWindowAttributes) == false) return;
+      if (TypeCheck.Bool(bSaveState) == false) return;
+
+      let oFrame = document.getElementById(oWindowAttributes.get("frame"));
+      if (!oFrame)
+      {
+        oFrame = document.createElement('iframe');
+        oFrame.id = oWindowAttributes.get("frame");
+        oFrame.src = oWindowAttributes.get("source");
+        oFrame.frameBorder = "0";
+        oFrame.className="frame-global";
+
+        document.getElementById(oWindowAttributes.get("row")).appendChild(oFrame);
+      }
+
+      let oRow = document.getElementById(oWindowAttributes.get("row"));
+      if (oRow)
+      {
+        oRow.removeAttribute("hidden");
+      }
+
+      if (bSaveState)
+      {
+        localStorage.setItem(oWindowAttributes.get("popup"), 0);
+      }
+    }
+
+    function GetSessionField(sKey)
+    {
+      if (TypeCheck.String(sKey) == false) return null;
+
+      return sessionStorage.getItem(sKey);
+    }
+
+    function SetSessionField(sKey, oValue)
+    {
+      if (TypeCheck.String(sKey) == false) return;
+      if (TypeCheck.Null(oValue) == true) return;
+
+      sessionStorage.setItem(sKey, oValue);
+    }
+
+    window.addEventListener("beforeunload", function(e)
+    {
+      UNLOADING = true;
+
+      //Close all active popup windows
+      for (let [key, value] of POPUP_WINDOWS.entries())
+      {
+        if (!TypeCheck.Null(value) && !value.closed)
+        {
+          value.close();
+        }
+      }
+    });
+
+    window.addEventListener("message", function(event)
+    {
+      if (TypeCheck.Instance(event.data) == false) return;
+
+      Popin(event.data, !UNLOADING);
+    });
+  </script>
+</body>
+
+</html>
