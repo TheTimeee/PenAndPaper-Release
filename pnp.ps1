@@ -40,7 +40,7 @@ function main() {
     
     Set-Location -Path "./client/";
 
-    Start-Process powershell.exe -ArgumentList "-WindowStyle Normal -ExecutionPolicy Bypass -File ""./server.ps1""" -NoNewWindow;
+    Start-Process powershell.exe -ArgumentList "-WindowStyle Minimized -ExecutionPolicy Bypass -File ""./server.ps1""" -NoNewWindow;
     Start-Process "http://localhost:8080/index.html";
 }
 
